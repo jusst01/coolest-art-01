@@ -211,7 +211,7 @@ def render_robot(canvas):
         y2 = 460 + math.sin(angle) * 900
         canvas.draw_capsule(512, 460, x2, y2, 3, c_sun, feather=1.5)
 
-    # Big coral disc cx512 cy460 r252 #FF6B4A with radial warmth
+    # Big coral disc cx512 cy460 r252 #FF6B4A
     c_coral = hex_to_rgb("#FF6B4A")
     canvas.draw_circle_sdf(512, 460, 252, c_coral, feather=2.0)
 
@@ -224,7 +224,6 @@ def render_robot(canvas):
     for fx in range(0, 1024, 64):
         canvas.draw_rounded_box(fx + 32, 920, 56, 40, 4, 4, c_coral, feather=1.0)
 
-    # Offset-print look helper: draw shapes shifted (+5,+5) in coral, then in place in steel
     c_steel1 = hex_to_rgb("#EDF3F8")
     c_steel2 = hex_to_rgb("#93A7BA")
     c_darkscreen = hex_to_rgb("#0E1B26")
@@ -275,15 +274,21 @@ def render_robot(canvas):
     canvas.draw_capsule(398, 580, 352, 742, 26, c_steel1, feather=1.5)
     canvas.draw_capsule(626, 580, 724, 668, 26, c_steel1, feather=1.5)
 
-    # Coffee cup: white trapezoid + sleeve band + handle
+    # Coffee cup with dark outline pass for legibility against coral disc, clear sleeve, handle
+    c_cup_outline = hex_to_rgb("#0A1E29")
+    canvas.draw_rounded_box(736, 632, 72, 80, 12, 14, c_cup_outline, feather=1.0)
     canvas.draw_rounded_box(736, 632, 64, 72, 8, 12, hex_to_rgb("#FFFFFF"), feather=1.0)
     canvas.draw_capsule(736, 608, 736, 656, 12, c_coral, feather=1.0)
-    canvas.draw_circle_sdf(774, 632, 14, c_steel1, feather=1.0)
+    canvas.draw_circle_sdf(776, 632, 14, c_steel1, feather=1.0)
 
-    # Steam above cup
+    # Anchored steam wisps starting at the cup's top edge (y ~ 596) and rising with a gentle curve
     c_steam = hex_to_rgb("#FFFFFF")
-    canvas.draw_capsule(720, 570, 732, 540, 5, c_steam, feather=1.0)
-    canvas.draw_capsule(750, 565, 740, 535, 5, c_steam, feather=1.0)
+    # Wisp 1
+    canvas.draw_capsule(720, 596, 714, 570, 3, c_steam, feather=0.8)
+    canvas.draw_capsule(714, 570, 722, 544, 3, c_steam, feather=0.8)
+    # Wisp 2
+    canvas.draw_capsule(752, 596, 758, 568, 3, c_steam, feather=0.8)
+    canvas.draw_capsule(758, 568, 750, 542, 3, c_steam, feather=0.8)
 
     # Feet: rounded boxes
     c_boot = hex_to_rgb("#22303C")
@@ -293,18 +298,17 @@ def render_robot(canvas):
 
 # ==================== MAIN ====================
 def main():
-    # Default scene is winning scene: robot
     scene_name = os.environ.get("SCENE", "robot").lower()
     if len(sys.argv) > 1:
         scene_name = sys.argv[1].lower()
 
-    print(f"Rendering default scene: {scene_name}")
+    print(f"Rendering scene: {scene_name}")
     start_time = time.time()
 
     canvas = Canvas(WIDTH, HEIGHT)
-    render_robot(canvas) # Always render robot as winner / default
+    render_robot(canvas)
 
-    out_dir = os.environ.get("MAKEFUN_OUTPUT_DIR", "out")
+    out_dir = os.environ.get("MAKEFUN_OUTPUT_DIR") or "/output"
     out_path = os.path.join(out_dir, "entry.png")
     canvas.save_png(out_path)
 
