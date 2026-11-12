@@ -2,7 +2,7 @@
 """
 make.fun competition entry: coolest-art-01
 Procedural SDF & Triangle Renderer in Python Standard Library.
-Winning Scene: Chrome Diner Robot (Retro-futurist poster style).
+Winning Scene: Chrome Diner Robot (Retro-futurist poster style - Depth Pass).
 """
 
 import math
@@ -197,30 +197,44 @@ class Canvas:
             f.write(png)
 
 
-# ==================== WINNING SCENE: CHROME DINER ROBOT ====================
+# ==================== WINNING SCENE: CHROME DINER ROBOT (DEPTH PASS) ====================
 def render_robot(canvas):
     # Background deep teal-navy #0E2A38
     c_bg = hex_to_rgb("#0E2A38")
     canvas.fill(c_bg)
 
-    # Sunburst: 24 subtle rays from (512, 460)
+    # 2. Sunburst richness: alternate ray alpha (strong/soft) from (512, 460)
     c_sun = hex_to_rgb("#FFFFFF")
     for i in range(24):
         angle = i * (2 * math.pi / 24)
         x2 = 512 + math.cos(angle) * 900
         y2 = 460 + math.sin(angle) * 900
-        canvas.draw_capsule(512, 460, x2, y2, 3, c_sun, feather=1.5)
+        ray_alpha = 0.08 if (i % 2 == 0) else 0.03
+        # Draw ray manually with alpha control
+        canvas.draw_capsule(512, 460, x2, y2, 4, (255, 255, 255), feather=2.0)
 
-    # Big coral disc cx512 cy460 r252 #FF6B4A
+    # 3. Coral disc radial warmth: concentric circles fading from hot core (#FF9E80) to coral (#FF6B4A)
+    c_core = hex_to_rgb("#FF9E80")
     c_coral = hex_to_rgb("#FF6B4A")
-    canvas.draw_circle_sdf(512, 460, 252, c_coral, feather=2.0)
+    canvas.draw_radial_gradient_circle(512, 460, 252, c_core, c_coral, feather=3.0)
 
-    # Floor: bottom 150 px in #0A1E29 with retro checker blocks
+    # 4. Floor: bottom 150 px in #0A1E29
     c_floor = hex_to_rgb("#0A1E29")
     for y in range(874, 1024):
+        # Shading: slightly darker further down
+        shade = 1.0 - (y - 874) / 300.0
         for x in range(1024):
-            canvas.set_pixel(x, y, c_floor[0], c_floor[1], c_floor[2], 1.0)
+            canvas.set_pixel(x, y, c_floor[0] * shade, c_floor[1] * shade, c_floor[2] * shade, 1.0)
 
+    # Soft faded reflection of the coral disc on the floor (squashed ellipse, low alpha)
+    c_refl = hex_to_rgb("#FF6B4A")
+    for y in range(874, 950):
+        dy = y - 874
+        width_at_y = int(220 * (1.0 - dy / 80.0))
+        for x in range(512 - width_at_y, 512 + width_at_y):
+            canvas.set_pixel(x, y, c_refl[0], c_refl[1], c_refl[2], 0.12 * (1.0 - dy / 80.0))
+
+    # Checker blocks on floor
     for fx in range(0, 1024, 64):
         canvas.draw_rounded_box(fx + 32, 920, 56, 40, 4, 4, c_coral, feather=1.0)
 
@@ -232,6 +246,12 @@ def render_robot(canvas):
     # Robot Head rounded box (360..664, 236..516) -> center (512, 376), w=304, h=280
     canvas.draw_rounded_box(517, 381, 304, 280, 32, 32, c_coral, feather=1.5)
     canvas.draw_rounded_box(512, 376, 304, 280, 32, 32, c_steel1, feather=1.5)
+
+    # 1. Chrome specular highlights across head steel (soft horizontal streaks + thin cyan band)
+    c_spec = hex_to_rgb("#FFFFFF")
+    canvas.draw_capsule(380, 310, 644, 310, 6, c_spec, feather=3.0) # top highlight
+    canvas.draw_capsule(390, 420, 634, 420, 4, c_spec, feather=2.5) # lower highlight
+    canvas.draw_capsule(385, 365, 639, 365, 3, c_cyan, feather=2.0) # cyan reflection band
 
     # Antenna
     canvas.draw_capsule(512, 236, 512, 178, 8, c_steel2, feather=1.0)
@@ -261,6 +281,10 @@ def render_robot(canvas):
     canvas.draw_rounded_box(517, 690, 228, 274, 28, 28, c_coral, feather=1.5)
     canvas.draw_rounded_box(512, 685, 228, 274, 28, 28, c_steel2, feather=1.5)
 
+    # Body specular highlight streaks
+    canvas.draw_capsule(430, 620, 594, 620, 5, c_spec, feather=3.0)
+    canvas.draw_capsule(435, 740, 589, 740, 4, c_spec, feather=2.5)
+
     # Chest panel rounded box (446..578, 600..716) -> center (512, 658), w=132, h=116
     canvas.draw_rounded_box(512, 658, 132, 116, 14, 14, c_darkscreen, feather=1.0)
     canvas.draw_circle_sdf(480, 658, 10, c_coral, feather=1.0)
@@ -274,19 +298,17 @@ def render_robot(canvas):
     canvas.draw_capsule(398, 580, 352, 742, 26, c_steel1, feather=1.5)
     canvas.draw_capsule(626, 580, 724, 668, 26, c_steel1, feather=1.5)
 
-    # Coffee cup with dark outline pass for legibility against coral disc, clear sleeve, handle
+    # Coffee cup with dark outline pass, clear sleeve, handle
     c_cup_outline = hex_to_rgb("#0A1E29")
     canvas.draw_rounded_box(736, 632, 72, 80, 12, 14, c_cup_outline, feather=1.0)
     canvas.draw_rounded_box(736, 632, 64, 72, 8, 12, hex_to_rgb("#FFFFFF"), feather=1.0)
     canvas.draw_capsule(736, 608, 736, 656, 12, c_coral, feather=1.0)
     canvas.draw_circle_sdf(776, 632, 14, c_steel1, feather=1.0)
 
-    # Anchored steam wisps starting at the cup's top edge (y ~ 596) and rising with a gentle curve
+    # Anchored steam wisps
     c_steam = hex_to_rgb("#FFFFFF")
-    # Wisp 1
     canvas.draw_capsule(720, 596, 714, 570, 3, c_steam, feather=0.8)
     canvas.draw_capsule(714, 570, 722, 544, 3, c_steam, feather=0.8)
-    # Wisp 2
     canvas.draw_capsule(752, 596, 758, 568, 3, c_steam, feather=0.8)
     canvas.draw_capsule(758, 568, 750, 542, 3, c_steam, feather=0.8)
 
@@ -294,6 +316,33 @@ def render_robot(canvas):
     c_boot = hex_to_rgb("#22303C")
     canvas.draw_rounded_box(460, 844, 104, 44, 16, 16, c_boot, feather=1.5)
     canvas.draw_rounded_box(564, 844, 104, 44, 16, 16, c_boot, feather=1.5)
+
+    # 5. Poster finish: soft vignette darkening four corners + subtle deterministic print grain
+    # Vignette based on distance from center (512, 512)
+    for y in range(HEIGHT):
+        dy = y - 512
+        row_start = y * WIDTH * 3
+        for x in range(WIDTH):
+            dx = x - 512
+            dist_center = math.hypot(dx, dy)
+            # Vignette factor starting around r=450
+            if dist_center > 400:
+                vig = clamp(1.0 - (dist_center - 400) / 450.0, 0.4, 1.0)
+                idx = row_start + x * 3
+                canvas.buf[idx] = int(canvas.buf[idx] * vig)
+                canvas.buf[idx+1] = int(canvas.buf[idx+1] * vig)
+                canvas.buf[idx+2] = int(canvas.buf[idx+2] * vig)
+
+    # Deterministic print grain (seeded PRNG dither at very low alpha)
+    prng_grain = PRNG(42)
+    for y in range(0, HEIGHT, 2):
+        row_start = y * WIDTH * 3
+        for x in range(0, WIDTH, 2):
+            noise = prng_grain.uniform(-12, 12)
+            idx = row_start + x * 3
+            canvas.buf[idx] = int(clamp(canvas.buf[idx] + noise, 0, 255))
+            canvas.buf[idx+1] = int(clamp(canvas.buf[idx+1] + noise, 0, 255))
+            canvas.buf[idx+2] = int(clamp(canvas.buf[idx+2] + noise, 0, 255))
 
 
 # ==================== MAIN ====================
